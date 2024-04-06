@@ -1,0 +1,270 @@
+// hierarchy 
+db -> collection -> document
+
+// mongo db server starting up
+mongod
+mongod --fork // to spin as a fork process, levaing terminal for other things.
+
+// connecting to a remote mongo server
+"mongodb+srv://host.ip.address/admin" --username xyz
+
+// mongoshell has a proper js interpreter builtin
+3+2 // 5
+
+// show avl dbs
+show dbs
+
+// switch to a new db
+// if not present db is created upon data being inserted into a collection
+use employees
+
+// create a new collection
+// inserting a document will implicitly create a collection anyways, so this is not required
+db.createCollection('engineers')
+db.createCollection('doctors')
+
+// see what collections exist under employees
+show collections
+
+
+// CRUD
+
+// insert one employee document in engineers collection of employees db
+db.engineers.insertOne({name: "jane doe", age:21, gender: "Female"})
+
+// every doc has a unique _id value assigned to it automatically
+// each insertion returns acknowledged true or false
+
+// insert a list of employees into `engineers` collection
+// can insert as an array of objects
+db.engineers.insert([
+{name: "ahmed", age: 25, gender:"male"},
+{name: "shadaab", age: 22, gender: "male"},
+])
+
+// mongodb does not enforce a schema or structure for objects
+// insert an empty object into the `engineers` collection
+db.engineers.insertOne({})
+
+// fields are optional and do not have to match rest of documents
+db.engineers.insertOne({name: "ahmed", gender:"male"})
+
+// types can vary and are preserved on insertion
+// this can require additional validation in some languages to prevent problems
+db.engineers.insert({name:['foo', bar'], age:3.13 , gender:true})
+
+// objects or arrays can be inserted inside a document
+db.engineers.insertOne({
+        name:'shadaab', 
+        gender:'male',
+        skilledIn: [
+            'mongodb',
+            'nosql'l
+        ],
+        'dob': {
+                'data': ,
+                'age': 23
+            }
+    })
+
+// overriding the _id field is possible
+// _id must always be unique for collection
+// otherwise WriteError
+db.engineers.insertOne({
+  _id: 1,
+  name: "Another Engineer",
+  age: 25,
+  gender: "Male",
+})
+
+// Works fine as this is a different collection
+db.doctors.insertOne({
+  _id: 1,
+  name: "Some Doctor",
+  age: 26,
+  gender: "Other",
+})
+
+////////////////////////////
+// Read (Find) /////////////
+////////////////////////////
+
+// queries are in form of db.collectionName.find(<filter>)
+// <filter> is an object
+
+// show everything in our db so far limited to a max of 20 docs at a time
+// press i to iterate this cursor to next 20 docs
+db.engineers.find({})
+
+// we can pretty print the result of any find() query
+db.engineers.find({}).pretty()
+
+// mongodb queries take in a js object and search for documenets with matching key-value paris
+// returns the first doc matching query
+// note: order of insertion is not preserved in db, output can vary
+db.engineers.findOne({name:'foo'})
+
+// returns all docs with matching key-value props as a cursor
+// which can be converted to an array
+db.engineers.find({age:23})
+
+// type matters when it comes to queries
+// returns nothing as all ages above are int type
+db.engineers.find({age: '24'})
+
+// find() supports nested objects and arrays just like create()
+db.engineers.find({
+  name: "Your Name",
+  gender: "Female",
+  skilledIn: [
+    "MongoDB",
+    "NoSQL",
+  ],
+  "date-of-birth": {
+    "date": 1993-07-20T09:44:18.674Z,
+    "age": 26
+  },
+})
+
+
+////////////////////////////
+// Update () /////////////
+////////////////////////////
+
+// queries are in form of db.collectionName.update(<filter>, <update>)
+// note: <update> will always use the $set operator
+
+// we can update a single object
+db.engineers.updateOne(
+    {name:'foo'}, 
+    {
+        $set:{
+            name:'john', 
+            age:100
+            }
+        }
+)
+
+// or update a single object
+db.engineers.updateOne({name: 'Foo Bar' }, { $set: { name: 'John Doe', age: 100 }}))
+
+// or update many objects at the same time
+db.engineers.update({age:24}, { $set: { age: 100 }}))
+
+// can use upsert:true if we would like to insert if the doc doesn't already exist
+// or to update if it does
+// returns matched, upserted, modified count
+db.engineers.update({ name: 'Foo Baz' },
+  { $set:
+    {
+      age: 26,
+      gender: 'Other'
+    }
+  },
+  { upsert: true })
+
+
+////////////////////////////
+// Delete /////////////
+////////////////////////////
+// queries are in form of db.collectionName.delete(<filter>)
+// delete first document matching query, always return deletedCount
+db.engineers.deleteOne({name:'ahmed'})
+
+// delete amny docs at once
+db.engineers.deleteMany({ gender: 'male'})
+
+// note: two methods removeOne(<filter>) and removeMany(<filter>) that also delete objects but have a slightly idfferent return value. they have been deprecated
+
+////////////////////////////
+// operators /////////////
+////////////////////////////
+
+// operators in mongodb have a $ prefix.
+
+// comparision and logical operators
+
+////////////////////////////
+// comparision /////////////
+////////////////////////////
+// >=
+.find({age : { $gt: 23 }})
+.find({age : { $gte: 23 }})
+
+// <=
+.find({age : { $lt: 23 }})
+.find({age : { $lte: 23 }})
+
+// != =
+.find({age : { $eq: 23 }})
+.find({age : { $ne: 23 }})
+
+// in
+.find({age : { $in: [23, 32] }})
+.find({age : { $nin: [23, 3829] }})
+
+
+////////////////////////////
+// locical operators ///////
+////////////////////////////
+
+// join two query clauses together
+.find({ $and: [
+  gender: 'female',
+  age: {
+          $gte: 14
+      }
+]})
+
+// match either query condition
+.find({ $or: [
+  gender: 'Female',
+  age: {
+    $gte: 18
+  }
+]})
+
+// negate the query
+db.engineers.find({ $not: {
+  gender: 'Female'
+}})
+
+// must match none of the query conditions
+db.engineers.find({ $nor [
+  gender: 'Female',
+  age: {
+    $gte: 18
+  }
+]})
+
+
+////////////////////////////
+// database operations /////
+////////////////////////////
+
+// drop the database
+db.dropDatabase()
+
+// create a new database with some data 
+use example
+db.test.insertOne({name: 'testing data', type:'test'})
+
+
+// exit mongod shell
+exit
+
+// import or export db as BSON
+// use mongodump
+
+// exported data found @ 'mogodb dataase tools / bin / dump'
+
+// mongorestore to restore data from a BSON
+mongorestore dump
+
+// import/export as JSON
+mongoexport --collection=example
+
+// mongodimport to export data as JSON for all databases
+mongoexport
+
+
